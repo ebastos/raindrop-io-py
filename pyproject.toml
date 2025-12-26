@@ -2,7 +2,7 @@
 name = "raindrop-io-py"
 version = "0.4.7"
 description = "API for Raindrop.io bookmark manager"
-authors = [{ name = "Peter Borocz <peter.borocz+raindrop-io-py@google.com>" }]
+authors = [{ name = "ebastos" }]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
 keywords = ["python"]
@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/PBorocz/raindrop-io-py"
+Homepage = "https://github.com/ebastos/raindrop-io-py"
 Documentation = "https://raindrop-io-py.rtfd.io"
 
 [dependency-groups]

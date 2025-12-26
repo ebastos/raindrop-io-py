@@ -1,10 +1,13 @@
 [![version](https://img.shields.io/badge/python-3.10+-green)](https://www.python.org/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-[![license](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/PBorocz/raindrop-io-py/blob/trunk/LICENSE)
+[![license](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/ebastos/raindrop-io-py/blob/trunk/LICENSE)
 
-# PROJECT STATUS!
+> [!IMPORTANT]
+> This is a maintained fork of [PBorocz/raindrop-io-py](https://github.com/PBorocz/raindrop-io-py).
 
-As of Spring 2024, I don't use RaindropIO anymore and thus will find it rather difficult to support this project. I'll keep up-to-date on CVE's of underlying packages for the foreseeable future but otherwise, FEEL FREE to fork and if you're interesting in taking ownership of the repo, feel free to contact me! (or open an issue)
+# PROJECT STATUS
+
+This project is actively maintained. After the original author moved away from Raindrop.io, this fork was created to continue support, maintain security, and introduce improvements.
 
 # Raindrop-IO-py
 
@@ -26,8 +29,14 @@ Requires Python 3.10 or later (well, at least we're developing against 3.11.3).
 
 ## Install
 
+It is recommended to use [uv](https://github.com/astral-sh/uv) to manage your project and dependencies.
+
 ```shell
-[.venv] python -m pip install raindrop-io-py
+# Using uv (recommended)
+uv add raindrop-io-py
+
+# Or using pip
+pip install raindrop-io-py
 ```
 
 ## Setup
