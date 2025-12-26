@@ -34,8 +34,10 @@ __all__ = [
     "BrokenLevel",
     "Collection",
     "CollectionRef",
+    "CreatorRef",
     "FontColor",
     "Group",
+    "Highlight",
     "Raindrop",
     "RaindropSort",
     "RaindropType",
@@ -180,6 +182,19 @@ class UserRef(BaseModel):
 
     id: int = Field(None, alias="$id")
     ref: str = Field(None, alias="$user")
+
+
+class CreatorRef(BaseModel):
+    """Represents a reference to the original author of a Raindrop."""
+
+    id: int = Field(None, alias="_id")
+    full_name: str | None = Field(None, alias="fullName")
+
+    @root_validator(pre=True)
+    def _validate(cls, v: Any) -> Any:  # noqa: N805
+        if isinstance(v, int):
+            return {"_id": v}
+        return v
 
 
 class Access(BaseModel):
@@ -452,6 +467,49 @@ class Collection(BaseModel):
         # Doesn't exist, create it!
         return Collection.create(api, title=title)
 
+    @classmethod
+    def delete_many(cls, api: T_API, ids: list[int]) -> bool:
+        """Delete multiple collections at once.
+
+        Args:
+            api: API Handle to use for the request.
+            ids: List of collection IDs to be deleted.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        url = URL.format(path="collections")
+        return api.delete(url, json={"ids": ids}).json().get("result", False)
+
+    @classmethod
+    def reorder_all(cls, api: T_API, sort: str) -> bool:
+        """Update order of all collections.
+
+        Args:
+            api: API Handle to use for the request.
+            sort: Possible values: "title", "-title", "-count".
+        """
+        url = URL.format(path="collections")
+        return api.put(url, json={"sort": sort}).json().get("result", False)
+
+    @classmethod
+    def merge(cls, api: T_API, ids: list[int], to_id: int) -> bool:
+        """Merge multiple collections into one.
+
+        Args:
+            api: API Handle to use for the request.
+            ids: Collection IDs to be merged.
+            to_id: Collection ID where they will be merged.
+        """
+        url = URL.format(path="collections/merge")
+        return api.put(url, json={"ids": ids, "to": to_id}).json().get("result", False)
+
+    @classmethod
+    def clean(cls, api: T_API) -> bool:
+        """Remove all empty collections."""
+        url = URL.format(path="collections/clean")
+        return api.put(url).json().get("result", False)
+
 
 class Group(BaseModel):
     """Sub-model defining a Raindrop user group."""
@@ -580,6 +638,67 @@ class File(BaseModel):
     type: str
 
 
+class Highlight(BaseModel):
+    """Represents a highlight within a Raindrop."""
+
+    id: str = Field(None, alias="_id")
+    text: str
+    color: str | None = None
+    note: str | None = None
+    created: datetime | None = None
+    raindrop_ref: int | None = Field(None, alias="raindropRef")
+    tags: list[str] | None = Field(default_factory=list)
+
+    @root_validator(pre=True)
+    def _validator(cls, v):  # noqa: N805
+        """Gather all non-recognised/unofficial attributes into a single attribute."""
+        return _collect_other_attributes(cls, v)
+
+    # Per API Doc: "Our API response could contain other fields, not described above.
+    # It's unsafe to use them in your integration! They could be removed or renamed at any time."
+    other: dict[str, Any] = {}
+
+    @classmethod
+    def get_all(cls, api: T_API, page: int = 0, perpage: int = 25) -> list[Highlight]:
+        """Get all the highlights currently defined.
+
+        Args:
+            api: API Handle to use for the request.
+            page: Page number for pagination.
+            perpage: Number of highlights per page.
+
+        Returns:
+            The list of all Highlights associated with the API's user.
+        """
+        params = {"page": page, "perpage": perpage}
+        items = api.get(URL.format(path="highlights"), params=params).json()["items"]
+        return [cls(**item) for item in items]
+
+    @classmethod
+    def get_for_collection(
+        cls,
+        api: T_API,
+        collection_id: int,
+        page: int = 0,
+        perpage: int = 25,
+    ) -> list[Highlight]:
+        """Get all the highlights in a specific collection.
+
+        Args:
+            api: API Handle to use for the request.
+            collection_id: Id of specific collection to limit search for all highlights.
+            page: Page number for pagination.
+            perpage: Number of highlights per page.
+
+        Returns:
+            The list of Highlights associated with the collection ID provided.
+        """
+        params = {"page": page, "perpage": perpage}
+        url = URL.format(path=f"highlights/{collection_id}")
+        items = api.get(url, params=params).json()["items"]
+        return [cls(**item) for item in items]
+
+
 class Cache(BaseModel):
     """Represents the cache information of Raindrop."""
 
@@ -608,6 +727,7 @@ class Raindrop(BaseModel):
         domain: Hostname of a link, ie. if a Raindrop has link: `https://www.google.com?search=SomeThing`,
           domain is `www.google.com`.
         excerpt: Description associated with this Raindrop (maximum length: 10k!)
+        note: Private note associated with this Raindrop (maximum length: 10k!)
         last_update: When this Raindrop was last updated.
         link: For a link-based Raindrop, the full URL.
         media: Covers list.
@@ -615,10 +735,12 @@ class Raindrop(BaseModel):
         title: The title of the Raindrop (maximum length: 1k).
         type: The type of the Raindrop, e.g. *link*, *document* (I haven't tested other types)
         user: The user who created the Raindrop.
+        creator_ref: Original author of the raindrop (e.g. if created in shared collection).
         broken: True of the link associated with the Raindrop is not reachable anymore.
         cache: Details of the permanent cache associated with the Raindrop.
         file: Details of the file associated with a **file** based Raindrop.
         important: True if this Raindrop is marked as a **Favorite**.
+        highlights: List of highlights associated with the Raindrop.
         other: All other attributes received from Raindrop's API.
 
     Warning:
@@ -632,6 +754,7 @@ class Raindrop(BaseModel):
     created: datetime | None
     domain: str | None
     excerpt: str | None  # aka 'Description' on the Raindrop UI.
+    note: str | None
     file: File | None
     last_update: datetime | None = Field(None, alias="lastUpdate")
     link: HttpUrl | None
@@ -640,11 +763,13 @@ class Raindrop(BaseModel):
     title: str | None
     type: RaindropType | None
     user: UserRef | None
+    creator_ref: CreatorRef | None = Field(None, alias="creatorRef")
 
     # "Other" fields:
     broken: bool | None
     cache: Cache | None
     important: bool | None  # aka marked as Favorite.
+    highlights: list[Highlight] | None = Field(default_factory=list)
 
     # Per API Doc: "Our API response could contain other fields, not described above.
     # It's unsafe to use them in your integration! They could be removed or renamed at any time."
@@ -654,6 +779,13 @@ class Raindrop(BaseModel):
     def _validator(cls, v):  # noqa: N805
         """Gather all non-recognised/unofficial attributes into a single attribute."""
         return _collect_other_attributes(cls, v)
+
+    @validator("creator_ref", pre=True)
+    def _validate_creator_ref(cls, v: Any) -> Any:  # noqa: N805
+        """Convert integer creatorRef to dict format for CreatorRef model."""
+        if isinstance(v, int):
+            return {"_id": v}
+        return v
 
     @classmethod
     def get(cls, api: T_API, id: int) -> Raindrop:
@@ -900,6 +1032,56 @@ class Raindrop(BaseModel):
         return cls(**item)
 
     @classmethod
+    def add_highlights(cls, api: T_API, id: int, highlights: list[dict]) -> Raindrop:
+        """Add one or more highlights to an existing Raindrop.
+
+        Args:
+            api: API Handle to use for the request.
+            id: Required id of Raindrop to be updated.
+            highlights: List of highlight dictionaries to add.
+                Example: [{"text": "Highlight text", "color": "red"}]
+
+        Returns:
+            Updated ``Raindrop`` instance.
+        """
+        url = URL.format(path=f"raindrop/{id}")
+        item = api.put(url, json={"highlights": highlights}).json()["item"]
+        return cls(**item)
+
+    @classmethod
+    def update_highlight(cls, api: T_API, id: int, highlight: dict) -> Raindrop:
+        """Update an existing highlight on a Raindrop.
+
+        Args:
+            api: API Handle to use for the request.
+            id: Required id of Raindrop to be updated.
+            highlight: Highlight dictionary containing the `_id` and fields to update.
+
+        Returns:
+            Updated ``Raindrop`` instance.
+        """
+        url = URL.format(path=f"raindrop/{id}")
+        item = api.put(url, json={"highlights": [highlight]}).json()["item"]
+        return cls(**item)
+
+    @classmethod
+    def remove_highlight(cls, api: T_API, id: int, highlight_id: str) -> Raindrop:
+        """Remove a highlight from a Raindrop.
+
+        Args:
+            api: API Handle to use for the request.
+            id: Required id of Raindrop to be updated.
+            highlight_id: The `_id` of the highlight to be removed.
+
+        Returns:
+            Updated ``Raindrop`` instance.
+        """
+        url = URL.format(path=f"raindrop/{id}")
+        highlight = {"_id": highlight_id, "text": ""}
+        item = api.put(url, json={"highlights": [highlight]}).json()["item"]
+        return cls(**item)
+
+    @classmethod
     def delete(cls, api: T_API, id: int) -> None:
         """Delete a Raindrop bookmark.
 
@@ -967,6 +1149,94 @@ class Raindrop(BaseModel):
             results.extend(raindrops)
             page += 1
         return results
+
+    @classmethod
+    def create_many(cls, api: T_API, items: list[dict]) -> list[Raindrop]:
+        """Create multiple Raindrop bookmarks at once.
+
+        Args:
+            api: API Handle to use for the request.
+            items: List of raindrop objects to create. Maximum 100 items.
+
+        Returns:
+            The (potentially empty) list of newly created Raindrops.
+
+        Raises:
+            ValueError: If more than 100 items are provided.
+        """
+        if len(items) > 100:
+            raise ValueError("Maximum 100 items allowed per request")
+        url = URL.format(path="raindrops")
+        results = api.post(url, json={"items": items}).json()
+        return [cls(**item) for item in results.get("items", [])]
+
+    @classmethod
+    def update_many(
+        cls,
+        api: T_API,
+        collection_id: int,
+        ids: list[int] | None = None,
+        search: str | None = None,
+        **kwargs,
+    ) -> int:
+        """Update multiple Raindrop bookmarks at once.
+
+        Args:
+            api: API Handle to use for the request.
+            collection_id: The collection ID to update raindrops in.
+            ids: Optional list of raindrop IDs to update.
+            search: Optional search string to filter raindrops to update.
+            **kwargs: Fields to update (e.g., tags, important, collection).
+
+        Returns:
+            The number of modified raindrops.
+
+        Raises:
+            ValueError: If neither ids nor search is provided.
+        """
+        if not ids and not search:
+            raise ValueError("At least one of 'ids' or 'search' must be provided")
+        url = URL.format(path=f"raindrops/{collection_id}")
+        data = kwargs.copy()
+        if ids:
+            data["ids"] = ids
+        if search:
+            data["search"] = search
+        result = api.put(url, json=data).json()
+        return result.get("modified", 0)
+
+    @classmethod
+    def delete_many(
+        cls,
+        api: T_API,
+        collection_id: int,
+        ids: list[int] | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Move multiple raindrops to Trash or remove them permanently.
+
+        Args:
+            api: API Handle to use for the request.
+            collection_id: The collection ID to delete from. Use -99 for Trash (permanent delete).
+            ids: Optional list of raindrop IDs to delete.
+            search: Optional search string to filter raindrops to delete.
+
+        Returns:
+            The number of modified raindrops.
+
+        Raises:
+            ValueError: If neither ids nor search is provided.
+        """
+        if not ids and not search:
+            raise ValueError("At least one of 'ids' or 'search' must be provided")
+        url = URL.format(path=f"raindrops/{collection_id}")
+        data = {}
+        if ids:
+            data["ids"] = ids
+        if search:
+            data["search"] = search
+        result = api.delete(url, json=data).json()
+        return result.get("modified", 0)
 
 
 class Tag(BaseModel):
