@@ -14,6 +14,6 @@ def test_get_user(api) -> None:
     assert user is not None
     assert isinstance(user, User)
     for attr in ["id", "email", "full_name", "password", "pro", "registered"]:
-        assert getattr(user, attr) is not None, (
-            f"We expected required attribute '{attr}' to be populated for the current user!"
-        )
+        assert (
+            getattr(user, attr) is not None
+        ), f"We expected required attribute '{attr}' to be populated for the current user!"

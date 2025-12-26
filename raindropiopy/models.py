@@ -12,7 +12,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import requests
 from pydantic import (
@@ -26,7 +26,7 @@ from pydantic import (
     validator,
 )
 
-from .api import T_API  # ie. for typing only...
+from .api import API  # ie. for typing only...
 
 __all__ = [
     "Access",
@@ -166,7 +166,11 @@ class CollectionRef(BaseModel):
 
     """
 
-    id: int = Field(None, alias="$id")
+    id: int | None = Field(None, alias="$id")
+
+    All: ClassVar[CollectionRef]
+    Trash: ClassVar[CollectionRef]
+    Unsorted: ClassVar[CollectionRef]
 
 
 # We define the 3 "system" collections in the Raindrop environment:
@@ -180,14 +184,14 @@ CollectionRef.Unsorted = CollectionRef(**{"$id": -1})
 class UserRef(BaseModel):
     """Represents a **reference** to `User` object."""
 
-    id: int = Field(None, alias="$id")
-    ref: str = Field(None, alias="$user")
+    id: int | None = Field(None, alias="$id")
+    ref: str | None = Field(None, alias="$user")
 
 
 class CreatorRef(BaseModel):
     """Represents a reference to the original author of a Raindrop."""
 
-    id: int = Field(None, alias="_id")
+    id: int | None = Field(None, alias="_id")
     full_name: str | None = Field(None, alias="fullName")
 
     @root_validator(pre=True)
@@ -230,15 +234,15 @@ class Collection(BaseModel):
         Attributes in `other` are *NOT* OFFICIALLY SUPPORTED...use at your own risk!
     """
 
-    id: int = Field(None, alias="_id")
+    id: int | None = Field(None, alias="_id")
     title: str
     user: UserRef
 
-    access: Access | None
-    collaborators: list[Any] | None = Field(default_factory=list)
+    access: Access | None = None
+    collaborators: list[Any] = Field(default_factory=list)
     color: str | None = None
     count: NonNegativeInt
-    cover: list[str] | None = Field(default_factory=list)
+    cover: list[str] = Field(default_factory=list)
     created: datetime | None
     expanded: bool = False
     last_update: datetime | None
@@ -252,9 +256,10 @@ class Collection(BaseModel):
     other: dict[str, Any] = {}
 
     # Used to convert parent reference's of sub-collections to simply id's of the respective parent collection.
-    _extract_parent_id = validator("parent", pre=True, allow_reuse=True)(
-        _resolve_parent_reference,
-    )
+    @validator("parent", pre=True, allow_reuse=True)
+    def _extract_parent_id(cls, v: dict[str, Any] | int | None) -> int | None:  # noqa: N805
+        """Convert parent reference dict to just the parent collection ID."""
+        return _resolve_parent_reference(v)
 
     @root_validator(pre=True)
     # FIXME: noqa here is because work-around in https://github.com/pydantic/pydantic/issues/568 doesn't work!
@@ -263,7 +268,7 @@ class Collection(BaseModel):
         return _collect_other_attributes(cls, v)
 
     @classmethod
-    def get_root_collections(cls, api: T_API) -> list[Collection]:
+    def get_root_collections(cls, api: API) -> list[Collection]:
         """Get **root** Raindrop collections.
 
         Args:
@@ -283,7 +288,7 @@ class Collection(BaseModel):
         return [cls(**item) for item in items]
 
     @classmethod
-    def get_child_collections(cls, api: T_API) -> list[Collection]:
+    def get_child_collections(cls, api: API) -> list[Collection]:
         """Get the **child** Raindrop collections (ie. all below root level).
 
         Args:
@@ -303,7 +308,7 @@ class Collection(BaseModel):
         return [cls(**item) for item in items]
 
     @classmethod
-    def get_collections(cls, api: T_API) -> list[Collection]:
+    def get_collections(cls, api: API) -> list[Collection]:
         """Query for all non-system collections (essentially a convenience wrapper, combining root & child Collections).
 
         Args:
@@ -316,7 +321,7 @@ class Collection(BaseModel):
         return cls.get_root_collections(api) + cls.get_child_collections(api)
 
     @classmethod
-    def get(cls, api: T_API, id: int) -> Collection:
+    def get(cls, api: API, id: int) -> Collection:
         """Return a Raindrop Collection instance based on it's id.
 
         Args:
@@ -337,7 +342,7 @@ class Collection(BaseModel):
     @classmethod
     def create(
         cls,
-        api: T_API,
+        api: API,
         title: str,
         cover: list[str] | None = None,
         expanded: bool | None = None,
@@ -391,7 +396,7 @@ class Collection(BaseModel):
     @classmethod
     def update(
         cls,
-        api: T_API,
+        api: API,
         id: int,
         cover: list[str] | None = None,
         expanded: bool | None = None,
@@ -434,7 +439,7 @@ class Collection(BaseModel):
         return cls(**item)
 
     @classmethod
-    def delete(cls, api: T_API, id: int) -> None:
+    def delete(cls, api: API, id: int) -> None:
         """Delete a Raindrop collection.
 
         Args:
@@ -448,7 +453,7 @@ class Collection(BaseModel):
         api.delete(URL.format(path=f"collection/{id}"), json={})
 
     @classmethod
-    def get_or_create(cls, api: T_API, title: str) -> Collection:
+    def get_or_create(cls, api: API, title: str) -> Collection:
         """Get a Raindrop collection based on it's **title**, if it doesn't exist, create it.
 
         Args:
@@ -468,7 +473,7 @@ class Collection(BaseModel):
         return Collection.create(api, title=title)
 
     @classmethod
-    def delete_many(cls, api: T_API, ids: list[int]) -> bool:
+    def delete_many(cls, api: API, ids: list[int]) -> bool:
         """Delete multiple collections at once.
 
         Args:
@@ -482,7 +487,7 @@ class Collection(BaseModel):
         return api.delete(url, json={"ids": ids}).json().get("result", False)
 
     @classmethod
-    def reorder_all(cls, api: T_API, sort: str) -> bool:
+    def reorder_all(cls, api: API, sort: str) -> bool:
         """Update order of all collections.
 
         Args:
@@ -493,7 +498,7 @@ class Collection(BaseModel):
         return api.put(url, json={"sort": sort}).json().get("result", False)
 
     @classmethod
-    def merge(cls, api: T_API, ids: list[int], to_id: int) -> bool:
+    def merge(cls, api: API, ids: list[int], to_id: int) -> bool:
         """Merge multiple collections into one.
 
         Args:
@@ -505,7 +510,7 @@ class Collection(BaseModel):
         return api.put(url, json={"ids": ids, "to": to_id}).json().get("result", False)
 
     @classmethod
-    def clean(cls, api: T_API) -> bool:
+    def clean(cls, api: API) -> bool:
         """Remove all empty collections."""
         url = URL.format(path="collections/clean")
         return api.put(url).json().get("result", False)
@@ -517,7 +522,7 @@ class Group(BaseModel):
     title: str
     hidden: bool
     sort: NonNegativeInt
-    collectionids: list[int] = Field(None, alias="collections")
+    collectionids: list[int] | None = Field(None, alias="collections")
 
 
 class UserConfig(BaseModel):
@@ -527,7 +532,7 @@ class UserConfig(BaseModel):
         Attributes in `other` are NOT OFFICIALLY SUPPORTED!.
     """
 
-    broken_level: BrokenLevel = None
+    broken_level: BrokenLevel | None = None
     font_color: FontColor | None = None
     font_size: int | None = None
     lang: str | None = None
@@ -555,17 +560,17 @@ class UserFiles(BaseModel):
 
     used: int
     size: PositiveInt
-    last_checkpoint: datetime = Field(None, alias="lastCheckpoint")
+    last_checkpoint: datetime | None = Field(None, alias="lastCheckpoint")
 
 
 class User(BaseModel):
     """Raindrop User model."""
 
-    id: int = Field(None, alias="_id")
+    id: int | None = Field(None, alias="_id")
     email: EmailStr
     email_md5: str | None = Field(None, alias="email_MD5")
     files: UserFiles
-    full_name: str = Field(None, alias="fullName")
+    full_name: str | None = Field(None, alias="fullName")
     groups: list[Group]
     password: bool
     pro: bool
@@ -574,7 +579,7 @@ class User(BaseModel):
     config: UserConfig
 
     @classmethod
-    def get(cls, api: T_API) -> User:
+    def get(cls, api: API) -> User:
         """Get all the information about the Raindrop user associated with the API token."""
         user = api.get(URL.format(path="user")).json()["user"]
         return cls(**user)
@@ -594,7 +599,7 @@ class SystemCollection(BaseModel):
     a small set of simple "status" calls available from the Raindrop.io API, specifically `get_counts` and `get_meta`.
     """
 
-    id: int = Field(None, alias="_id")
+    id: int | None = Field(None, alias="_id")
     count: NonNegativeInt
     title: str | None
 
@@ -610,13 +615,13 @@ class SystemCollection(BaseModel):
         return values
 
     @classmethod
-    def get_counts(cls, api: T_API) -> list[Collection]:
+    def get_counts(cls, api: API) -> list[SystemCollection]:
         """Get the count of Raindrops in each of the 3 *system* collections."""
         items = api.get(URL.format(path="user/stats")).json()["items"]
         return [cls(**item) for item in items]
 
     @classmethod
-    def get_meta(cls, api: T_API) -> dict:
+    def get_meta(cls, api: API) -> dict:
         """Get the 'meta' slug from the root/system Collection.
 
         Contains information about:
@@ -641,13 +646,13 @@ class File(BaseModel):
 class Highlight(BaseModel):
     """Represents a highlight within a Raindrop."""
 
-    id: str = Field(None, alias="_id")
+    id: str | None = Field(None, alias="_id")
     text: str
     color: str | None = None
     note: str | None = None
     created: datetime | None = None
     raindrop_ref: int | None = Field(None, alias="raindropRef")
-    tags: list[str] | None = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
 
     @root_validator(pre=True)
     def _validator(cls, v):  # noqa: N805
@@ -659,7 +664,7 @@ class Highlight(BaseModel):
     other: dict[str, Any] = {}
 
     @classmethod
-    def get_all(cls, api: T_API, page: int = 0, perpage: int = 25) -> list[Highlight]:
+    def get_all(cls, api: API, page: int = 0, perpage: int = 25) -> list[Highlight]:
         """Get all the highlights currently defined.
 
         Args:
@@ -677,7 +682,7 @@ class Highlight(BaseModel):
     @classmethod
     def get_for_collection(
         cls,
-        api: T_API,
+        api: API,
         collection_id: int,
         page: int = 0,
         perpage: int = 25,
@@ -748,7 +753,7 @@ class Raindrop(BaseModel):
     """
 
     # "Main" fields (per https://developer.raindrop.io/v1/raindrops)
-    id: int = Field(None, alias="_id")
+    id: int | None = Field(None, alias="_id")
     collection: Collection | CollectionRef = CollectionRef.Unsorted
     cover: str | None
     created: datetime | None
@@ -769,7 +774,7 @@ class Raindrop(BaseModel):
     broken: bool | None
     cache: Cache | None
     important: bool | None  # aka marked as Favorite.
-    highlights: list[Highlight] | None = Field(default_factory=list)
+    highlights: list[Highlight] = Field(default_factory=list)
 
     # Per API Doc: "Our API response could contain other fields, not described above.
     # It's unsafe to use them in your integration! They could be removed or renamed at any time."
@@ -788,13 +793,13 @@ class Raindrop(BaseModel):
         return v
 
     @classmethod
-    def get(cls, api: T_API, id: int) -> Raindrop:
+    def get(cls, api: API, id: int) -> Raindrop:
         """Return a Raindrop bookmark based on it's id."""
         item = api.get(URL.format(path=f"{id}")).json()["item"]
         return cls(**item)
 
     @classmethod
-    def cache(cls, api: T_API, id: int) -> requests.Response:
+    def get_cache(cls, api: API, id: int) -> requests.Response:
         """Return the requests on behalf of a permanent copy of the specified Raindrop."""
         # Note: In testing in 2024-01, while I was able to get a URL back in this response
         # (after a 307 redirect), the URL did NOT work against S3...(essentially an "item not
@@ -804,9 +809,9 @@ class Raindrop(BaseModel):
     @classmethod
     def create_link(
         cls,
-        api: T_API,
+        api: API,
         link: str,
-        collection: (Collection | CollectionRef, int) | None = None,
+        collection: Collection | CollectionRef | int | None = None,
         cover: str | None = None,
         excerpt: str | None = None,
         important: bool | None = None,
@@ -884,10 +889,10 @@ class Raindrop(BaseModel):
     @classmethod
     def create_file(
         cls,
-        api: T_API,
+        api: API,
         path: Path,
         content_type: str,
-        collection: (Collection | CollectionRef, int) | None = CollectionRef.Unsorted,
+        collection: Collection | CollectionRef | int | None = CollectionRef.Unsorted,
         tags: list[str] | None = None,
         title: str | None = None,
     ) -> Raindrop:
@@ -955,9 +960,9 @@ class Raindrop(BaseModel):
     @classmethod
     def update(
         cls,
-        api: T_API,
+        api: API,
         id: int,
-        collection: (Collection | CollectionRef, int) | None = None,
+        collection: Collection | CollectionRef | int | None = None,
         cover: str | None = None,
         excerpt: str | None = None,
         important: bool | None = None,
@@ -1032,7 +1037,7 @@ class Raindrop(BaseModel):
         return cls(**item)
 
     @classmethod
-    def add_highlights(cls, api: T_API, id: int, highlights: list[dict]) -> Raindrop:
+    def add_highlights(cls, api: API, id: int, highlights: list[dict]) -> Raindrop:
         """Add one or more highlights to an existing Raindrop.
 
         Args:
@@ -1049,7 +1054,7 @@ class Raindrop(BaseModel):
         return cls(**item)
 
     @classmethod
-    def update_highlight(cls, api: T_API, id: int, highlight: dict) -> Raindrop:
+    def update_highlight(cls, api: API, id: int, highlight: dict) -> Raindrop:
         """Update an existing highlight on a Raindrop.
 
         Args:
@@ -1065,7 +1070,7 @@ class Raindrop(BaseModel):
         return cls(**item)
 
     @classmethod
-    def remove_highlight(cls, api: T_API, id: int, highlight_id: str) -> Raindrop:
+    def remove_highlight(cls, api: API, id: int, highlight_id: str) -> Raindrop:
         """Remove a highlight from a Raindrop.
 
         Args:
@@ -1082,7 +1087,7 @@ class Raindrop(BaseModel):
         return cls(**item)
 
     @classmethod
-    def delete(cls, api: T_API, id: int) -> None:
+    def delete(cls, api: API, id: int) -> None:
         """Delete a Raindrop bookmark.
 
         Args:
@@ -1098,7 +1103,7 @@ class Raindrop(BaseModel):
     @classmethod
     def _search_paged(
         cls,
-        api: T_API,
+        api: API,
         collection: CollectionRef = CollectionRef.All,
         search: str | None = None,
         page: int = 0,
@@ -1110,7 +1115,7 @@ class Raindrop(BaseModel):
         search reflecting paging (while the primary ``search`` method below hides it
         completely).
         """
-        params = {"perpage": perpage, "page": page}
+        params: dict[str, int | str] = {"perpage": perpage, "page": page}
         if search:
             params["search"] = search
         url = URL.format(path=f"raindrops/{collection.id}")
@@ -1120,7 +1125,7 @@ class Raindrop(BaseModel):
     @classmethod
     def search(
         cls,
-        api: T_API,
+        api: API,
         collection: Collection | CollectionRef = CollectionRef.All,
         search: str | None = None,
     ) -> list[Raindrop]:
@@ -1142,7 +1147,7 @@ class Raindrop(BaseModel):
         results = list()
         while raindrops := Raindrop._search_paged(
             api,
-            collection,
+            CollectionRef(**{"$id": collection.id}) if isinstance(collection, Collection) else collection,
             page=page,
             search=search,
         ):
@@ -1151,7 +1156,7 @@ class Raindrop(BaseModel):
         return results
 
     @classmethod
-    def create_many(cls, api: T_API, items: list[dict]) -> list[Raindrop]:
+    def create_many(cls, api: API, items: list[dict]) -> list[Raindrop]:
         """Create multiple Raindrop bookmarks at once.
 
         Args:
@@ -1173,7 +1178,7 @@ class Raindrop(BaseModel):
     @classmethod
     def update_many(
         cls,
-        api: T_API,
+        api: API,
         collection_id: int,
         ids: list[int] | None = None,
         search: str | None = None,
@@ -1208,7 +1213,7 @@ class Raindrop(BaseModel):
     @classmethod
     def delete_many(
         cls,
-        api: T_API,
+        api: API,
         collection_id: int,
         ids: list[int] | None = None,
         search: str | None = None,
@@ -1230,7 +1235,7 @@ class Raindrop(BaseModel):
         if not ids and not search:
             raise ValueError("At least one of 'ids' or 'search' must be provided")
         url = URL.format(path=f"raindrops/{collection_id}")
-        data = {}
+        data: dict[str, str | list[int]] = {}
         if ids:
             data["ids"] = ids
         if search:
@@ -1242,11 +1247,11 @@ class Raindrop(BaseModel):
 class Tag(BaseModel):
     """Represents existing Tags, either all or just a specific collection."""
 
-    tag: str = Field(None, alias="_id")
+    tag: str | None = Field(None, alias="_id")
     count: int
 
     @classmethod
-    def get(cls, api: T_API, collection_id: int | None = None) -> list[Tag]:
+    def get(cls, api: API, collection_id: int | None = None) -> list[Tag]:
         """Get all the tags currently defined, either in a specific collections or across all collections.
 
         Args:
@@ -1264,7 +1269,7 @@ class Tag(BaseModel):
         return [Tag(**item) for item in items]
 
     @classmethod
-    def delete(cls, api: T_API, tags: list[str]) -> None:
+    def delete(cls, api: API, tags: list[str]) -> None:
         """Delete one or more Tags.
 
         Args:

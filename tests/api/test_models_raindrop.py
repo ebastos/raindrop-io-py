@@ -108,7 +108,7 @@ def test_create_file() -> None:
         assert "files" in m.call_args[1]
         assert "file" in m.call_args[1]["files"]
 
-        assert type(m.call_args[1]["files"]["file"]) == tuple  # noqa: E721
+        assert type(m.call_args[1]["files"]["file"]) == tuple
         file_ = m.call_args[1]["files"]["file"]
         assert len(file_) == 3
 

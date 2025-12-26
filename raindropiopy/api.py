@@ -4,11 +4,14 @@ Except for instantiating, methods in this class are **not** intended for direct 
 abstraction layer for calls available for the Core Classes, ie. Collection, Raindrop etc.
 """
 
+from __future__ import annotations
+
+
 import datetime
 import enum
 import json
 from pathlib import Path
-from typing import Any, Final, TypeVar
+from typing import Any, Final
 
 import requests
 from requests_oauthlib import OAuth2Session
@@ -20,7 +23,6 @@ URL_ACCESS_TOKEN: Final = "https://raindrop.io/oauth/access_token"
 URL_REFRESH: Final = "https://raindrop.io/oauth/access_token"
 
 # In py3.11, we'll be able to do 'from typing import Self' instead
-T_API = TypeVar("API")
 
 
 class API:
@@ -253,13 +255,18 @@ class API:
         self._on_resp(ret)
         return ret
 
-    def __enter__(self) -> T_API:  # Note: Py3.11 upgrade to "self"
+    def __enter__(self) -> API:  # Note: Py3.11 upgrade to "self"
         """Context manager use: if we don't have an active session open yet, open one!."""
         if not self.session:
             self.open()
         return self
 
-    def __exit__(self, _type, _value, _traceback) -> None:  # type: ignore
+    def __exit__(
+        self,
+        _type: type[BaseException] | None,
+        _value: BaseException | None,
+        _traceback: object,
+    ) -> None:
         """Context manager use: once we're done with this API's scope, close connection off."""
         if self.session:
             self.close()

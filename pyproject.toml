@@ -29,6 +29,9 @@ dev = [
     "vcrpy>=8.1.0,<9",
     "fawltydeps>=0.17.0,<0.18",
     "pytest>=7.4.3,<8",
+    "mypy>=1.10.0",
+    "bandit>=1.7.9",
+    "types-requests",
 ]
 docs = [
     "sphinx>=7.2.6,<8",
@@ -170,3 +173,21 @@ shell = """
   set -l release_version (grep "version =" pyproject.toml | head -1 | awk -F'\"' '{print $2}')
   gh release create "$release_version" --title "$release_version"
 """
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples"]
+skips = ["B101", "B107"] # Ignore assert and hardcoded password false positive
+
+[tool.fawltydeps]
+exclude = ["examples", "noxfile.py", "test_requirements.txt", "docs/requirements.txt"]
+ignore_undeclared = ["pytest", "requests", "vcr"]  # These are in dev dependency-groups
+ignore_unused = ["email-validator", "urllib3"]  # Indirect deps: pydantic EmailStr, requests
