@@ -164,6 +164,7 @@ We use [Sphinx](https://www.sphinx-doc.org/en/master/index.html) with [Google-st
 ## Acknowledgments
 
 [python-raindropio](https://github.com/atsuoishimoto/python-raindropio) from [Atsuo Ishimoto](https://github.com/atsuoishimoto).
+[raindrop-io-py](https://github.com/PBorocz/raindrop-io-py) from [Péter Borocz](https://github.com/PBorocz) from where this fork started.
 
 ## License
 
