@@ -20,3 +20,15 @@ def test_get() -> None:
         tag = tags[0]
         assert tag.tag == "a Sample Tag"
         assert tag.count == 1
+
+
+def test_delete() -> None:
+    """Test that we can delete a tag."""
+    api = API("dummy")
+    tags = ["tag1", "tag2"]
+    with patch("raindropiopy.api.OAuth2Session.request") as m:
+        Tag.delete(api, tags)
+        assert m.call_args[0] == ("DELETE", "https://api.raindrop.io/rest/v1/tags")
+        import json
+
+        assert json.loads(m.call_args[1]["data"]) == {"tags": tags}

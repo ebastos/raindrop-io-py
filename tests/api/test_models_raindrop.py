@@ -136,3 +136,40 @@ def test_delete() -> None:
             "DELETE",
             "https://api.raindrop.io/rest/v1/raindrop/2000",
         )
+
+
+def test_create_link_with_note() -> None:
+    """Test ability to create a link-based Raindrop with a note."""
+    api = API("dummy")
+    with patch("raindropiopy.api.OAuth2Session.request") as m:
+        # We need a raindrop dict that has a note
+        raindrop_with_note = raindrop.copy()
+        raindrop_with_note["note"] = "a note"
+        m.return_value.json.return_value = {"item": raindrop_with_note}
+
+        note = "a note"
+        item = Raindrop.create_link(api, link="https://example.com", note=note)
+
+        import json
+
+        sent_data = json.loads(m.call_args[1]["data"])
+        assert sent_data["note"] == note
+        assert item.note == note
+
+
+def test_update_with_note() -> None:
+    """Test ability to update an existing Raindrop with a new note."""
+    api = API("dummy")
+    with patch("raindropiopy.api.OAuth2Session.request") as m:
+        raindrop_with_note = raindrop.copy()
+        raindrop_with_note["note"] = "updated note"
+        m.return_value.json.return_value = {"item": raindrop_with_note}
+
+        note = "updated note"
+        item = Raindrop.update(api, id=2000, note=note)
+
+        import json
+
+        sent_data = json.loads(m.call_args[1]["data"])
+        assert sent_data["note"] == note
+        assert item.note == note

@@ -820,6 +820,7 @@ class Raindrop(BaseModel):
         please_parse: bool = False,  # If set, asks API to automatically parse metadata in the background
         tags: list[str] | None = None,
         title: str | None = None,
+        note: str | None = None,
     ) -> Raindrop:
         """Create a new link-type Raindrop bookmark.
 
@@ -849,6 +850,8 @@ class Raindrop(BaseModel):
 
             title: Optional, Title to associated with this Raindrop.
 
+            note: Optional, Private note associated with this Raindrop. Maximum length is 10k characters.
+
         Returns:
             ``Raindrop`` instance created.
 
@@ -871,6 +874,7 @@ class Raindrop(BaseModel):
             "order",
             "tags",
             "title",
+            "note",
         ]:
             if (value := locals().get(attr)) is not None:
                 args[attr] = value
@@ -972,6 +976,7 @@ class Raindrop(BaseModel):
         please_parse: bool | None = False,
         tags: list[str] | None = None,
         title: str | None = None,
+        note: str | None = None,
     ) -> Raindrop:
         """Update an existing Raindrop bookmark, setting any of the attribute values provided.
 
@@ -1002,6 +1007,8 @@ class Raindrop(BaseModel):
 
             title: Optional, New title for this Raindrop.
 
+            note: Optional, New private note for this Raindrop. Maximum length is 10,000 characters.
+
         Returns:
             ``Raindrop`` instance that was updated.
         """
@@ -1020,6 +1027,7 @@ class Raindrop(BaseModel):
             "order",
             "tags",
             "title",
+            "note",
         ]:
             if (value := locals().get(attr)) is not None:
                 args[attr] = value
@@ -1280,4 +1288,4 @@ class Tag(BaseModel):
         Returns:
             None.
         """
-        api.delete(URL.format(path="tags"), json={})
+        api.delete(URL.format(path="tags"), json={"tags": tags})

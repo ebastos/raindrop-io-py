@@ -113,7 +113,7 @@ with API(os.environ["RAINDROP_TOKEN"]) as api:
 		print(item.title)
 ```
 
-#### Create a New Raindrop Bookmark to a URL
+#### Create a New Raindrop Bookmark with a Note
 
 ```python
 import os
@@ -125,14 +125,16 @@ from raindropiopy import API, Raindrop
 load_dotenv()
 
 with API(os.environ["RAINDROP_TOKEN"]) as api:
-	link, title = "https://www.python.org/", "Our Benevolent Dictator's Creation"
-	print(f"Creating Raindrop to: '{link}' with title: '{title}'...", flush=True, end="")
-	raindrop = Raindrop.create_link(api, link=link, title=title, tags=["abc", "def"])
+	link = "https://www.python.org/"
+	title = "Our Benevolent Dictator's Creation"
+	note = "This is a personal note about Python.org"
+	print(f"Creating Raindrop to: '{link}' with note...", flush=True, end="")
+	raindrop = Raindrop.create_link(api, link=link, title=title, note=note)
 	print(f"Done, id={raindrop.id}")
 
 ```
 
-(after this has executed, go to your Raindrop.io environment (site or app) and you should see this Raindrop to python.org available)
+(after this has executed, go to your Raindrop.io environment (site or app) and you should see this Raindrop with your personal note)
 
 #### Create a New Raindrop Collection
 
@@ -173,6 +175,14 @@ The project is licensed under the MIT License.
 ## Release History
 
 ### Unreleased
+
+### 0.5.2 - 2025-12-26
+
+- **NEW**: Added support for the `note` parameter in `Raindrop.create_link()` and `Raindrop.update()`. This allowing users to set and update personal notes for bookmarks directly through the models.
+
+- **FIXED**: `Tag.delete()` now correctly passes the `tags` list to the Raindrop.io API. Previously, the parameter was ignored and an empty payload was sent.
+
+- **ADDED**: New example script `examples/raindrop_note_demo.py` demonstrating the use of the `note` parameter.
 
 ### 0.5.1 - 2025-12-26
 

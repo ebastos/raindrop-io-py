@@ -2,15 +2,15 @@
 
 ## Overview
 
-**raindrop-io-py** is a Python wrapper library for the [Raindrop.io](https://raindrop.io) Bookmark Manager API (v0.4.7). It provides a clean, Pythonic interface to create, update, delete, and search bookmark ("Raindrop") entities, collections, tags, and user information. The library leverages Pydantic for data validation, OAuth2 for authentication, and follows a class-based API design pattern. Mature at ~2,100 LOC, it includes comprehensive documentation, 22 passing tests with VCR cassettes for API mocking, and ships as a PyPI package.
+**raindrop-io-py** is a Python wrapper library for the [Raindrop.io](https://raindrop.io) Bookmark Manager API (v0.5.2). It provides a clean, Pythonic interface to create, update, delete, and search bookmark ("Raindrop") entities, collections, tags, and user information. The library leverages Pydantic for data validation, OAuth2 for authentication, and follows a class-based API design pattern. Mature at ~2,100 LOC, it includes comprehensive documentation, 34 passing tests with VCR cassettes for API mocking, and ships as a PyPI package.
 
 ## File and Language Breakdown
 
 | Language/Type | Files | Lines of Code | Percentage |
 |---------------|-------|---------------|------------|
 | **Python (Core)** | 3 | 1,328 | 63% |
-| **Python (Tests)** | 11 | 765 | 36% |
-| **Python (Examples)** | 14 | ~350 | - |
+| **Python (Tests)** | 11 | 790 | 36% |
+| **Python (Examples)** | 15 | ~380 | - |
 | **Configuration** | 6 | ~250 | - |
 | **Documentation** | 8 | ~500 | - |
 
@@ -32,8 +32,8 @@ raindrop-io-py/
 │   └── api/
 │       ├── conftest.py          → VCR configuration for API mocking
 │       ├── cassettes/           → 7 recorded API response YAMLs
-│       └── test_*.py            → 11 test modules (22 tests)
-├── examples/                    # 14 runnable example scripts
+│       └── test_*.py            → 11 test modules (34 tests)
+├── examples/                    # 15 runnable example scripts
 ├── docs/                        # Sphinx documentation source
 ├── pyproject.toml               → Project config (uv, ruff, vulture, poe tasks)
 └── justfile                     → Task runner commands
@@ -48,6 +48,7 @@ raindrop-io-py/
 ## Key Features & Workflows
 
 - **Bookmark (Raindrop) Management**: Create link-based or file-based bookmarks (`Raindrop.create_link()`, `Raindrop.create_file()`)
+- **Private Bookmark Notes**: Set and update personal notes for bookmarks via the `note` parameter.
 - **Collection Operations**: Full CRUD for bookmark collections with nested/child collection support
 - **Tag Management**: Query and delete tags across all or specific collections
 - **User Information**: Retrieve authenticated user profile and configuration
@@ -75,7 +76,6 @@ raindrop-io-py/
 | **MEDIUM** | Uses `assert` for runtime checks instead of proper exceptions | `api.py:171,189,216,233,251` |
 | **MEDIUM** | Pydantic v1 validators (`@validator`, `@root_validator`) should migrate to v2 | `models.py:240,244,484,489,543,653` |
 | **LOW** | 4 FIXME comments indicating incomplete implementations | `models.py:245`, `test_models_*.py` |
-| **LOW** | `Tag.delete()` doesn't use the `tags` parameter (bug) | `models.py:1008` |
 | **LOW** | Lambda in example could be regular function for clarity | `examples/list_collections.py:17` |
 | **LOW** | Test coverage tool (pytest-cov) not installed | `pyproject.toml` |
 
@@ -172,27 +172,9 @@ def get(self, url: str, params: dict[Any, Any] | None = None) -> requests.models
 
 ---
 
-### Issue 2: `Tag.delete()` Ignores Parameter
-
-**File:** `models.py:996-1008`
-
-```python
-# Before (BUG: 'tags' parameter is never used!)
-@classmethod
-def delete(cls, api: T_API, tags: list[str]) -> None:
-    """Delete one or more Tags."""
-    api.delete(URL.format(path="tags"), json={})  # ← Empty dict, ignores 'tags'
-
-# After (fixed)
-@classmethod
-def delete(cls, api: T_API, tags: list[str]) -> None:
-    """Delete one or more Tags."""
-    api.delete(URL.format(path="tags"), json={"tags": tags})
-```
-
 ---
 
-### Issue 3: Pydantic v1 to v2 Migration Example
+### Issue 2: Pydantic v1 to v2 Migration Example
 
 **File:** `models.py:484-487`
 
@@ -220,23 +202,24 @@ def cast_last_collection_to_ref(cls, v):
 ```
 ============================= test session starts ==============================
 platform darwin -- Python 3.12.11, pytest-7.4.4
-collected 22 items
+collected 34 items
 
+tests/api/test_audit_updates.py        9 passed
 tests/api/test_collections.py          3 passed
 tests/api/test_models_api.py           1 passed
 tests/api/test_models_collection.py    6 passed
-tests/api/test_models_raindrop.py      6 passed
-tests/api/test_models_tag.py           1 passed
+tests/api/test_models_raindrop.py      8 passed
+tests/api/test_models_tag.py           2 passed
 tests/api/test_models_user.py          1 passed
 tests/api/test_raindrop.py             2 passed
 tests/api/test_tags.py                 1 passed
 tests/api/test_user.py                 1 passed
 
-============================== 22 passed in 0.11s ==============================
+============================== 34 passed in 0.13s ==============================
 ```
 
 **Note:** Tests use VCR cassettes (`record_mode=none`) to replay recorded API responses, ensuring deterministic results without live API calls.
 
 ---
 
-*Report generated: 2025-12-26 | Codebase version: 0.4.7*
+*Report generated: 2025-12-26 | Codebase version: 0.5.2*
