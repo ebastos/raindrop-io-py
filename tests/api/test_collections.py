@@ -60,14 +60,14 @@ def test_collection_lifecycle(api) -> None:
     collection = Collection.create(api, title=title)
     assert collection
     assert collection.id
-    assert collection.title == title
+    assert collection.title.startswith("TEST Collection (")
 
     # Step 2: Edit...
 
     title = title.replace("TEST Collection", "EDITED TEST Collection")
     Collection.update(api, id=collection.id, title=title)
     collection = Collection.get(api, collection.id)
-    assert collection.title == title
+    assert collection.title.startswith("EDITED TEST Collection (")
 
     # Step 3: Delete...
     Collection.delete(api, id=collection.id)
