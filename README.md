@@ -17,11 +17,11 @@ Capabilities include the ability to create, update, delete both link & file-base
 
 ## Background
 
-I wanted to use an existing API for the Raindrop Bookmark Manager ([python-raindropio](https://github.com/atsuoishimoto/python-raindropio)) to perform some bulk operations through a simple command-line interface. However, the API was incomplete didn't seem actively supported anymore. Thus, this is a _fork_ and significant extension of [python-raindropio](https://github.com/atsuoishimoto/python-raindropio) (ht [Atsuo Ishimoto](https://github.com/atsuoishimoto)).
+This project is a maintained fork of [PBorocz/raindrop-io-py](https://github.com/PBorocz/raindrop-io-py), which itself was a fork and significant extension of the original [python-raindropio](https://github.com/atsuoishimoto/python-raindropio) by [Atsuo Ishimoto](https://github.com/atsuoishimoto). After the original maintainer moved away from Raindrop.io, this fork was created to continue active development, security updates, and feature improvements.
 
 ## Status
 
-As the API layer is based on a fork of an existing package, it's reasonably stable.
+This fork is actively maintained and regularly updated with security patches and new features. The API layer is stable and well-tested.
 
 ## Requirements
 
@@ -33,10 +33,10 @@ It is recommended to use [uv](https://github.com/astral-sh/uv) to manage your pr
 
 ```shell
 # Using uv (recommended)
-uv add raindrop-io-py
+uv add git+https://github.com/ebastos/raindrop-io-py.git
 
 # Or using pip
-pip install raindrop-io-py
+pip install git+https://github.com/ebastos/raindrop-io-py.git
 ```
 
 ## Setup
@@ -50,7 +50,7 @@ To use this package, you'll need two items:
 
 To setup your `integration app`:
 
-- Go to [<https://app.draindrop.api/settings/integrations>](https://app.raindrop.io/settings/integrations) and select `+ create new app`:
+- Go to [https://app.raindrop.io/settings/integrations](https://app.raindrop.io/settings/integrations) and select `+ create new app`:
 
 - Give it a descriptive name and then select the app you just created.
 
@@ -394,8 +394,3 @@ from raindroiopy.api import API
 ```
 
 - FIXED: Sample file upload specification in `examples/create_raindrop_file.py` is now correct.
-
-.. |docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
-	:alt: Documentation Status
-	:scale: 100%
-	:target: https://docs.readthedocs.io/en/latest/?badge=latest
