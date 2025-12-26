@@ -174,6 +174,31 @@ The project is licensed under the MIT License.
 
 ### Unreleased
 
+### 0.5.0 - 2025-12-26
+
+This release marks a significant milestone as the project transitions to a maintained fork with numerous enhancements:
+
+- **FORK**: Officially established as a maintained fork of [PBorocz/raindrop-io-py](https://github.com/PBorocz/raindrop-io-py) with active development and support.
+
+- **PACKAGING**: Migrated from Poetry to [uv](https://github.com/astral-sh/uv) for modern, faster dependency management and build processes.
+
+- **TOOLING**: Comprehensive pre-commit hooks added including:
+  - `ruff` for linting and formatting
+  - `mypy` for static type checking
+  - `bandit` for security auditing
+  - `fawltydeps` for dependency management
+
+- **CODE QUALITY**: Full type safety improvements with mypy integration and resolved all type errors across the codebase.
+
+- **DOCUMENTATION**:
+  - Updated README to reflect fork status and current project state
+  - Refreshed examples directory with demonstrations of new features
+  - Enhanced documentation for highlights and bulk operations
+
+- **DEVELOPER EXPERIENCE**:
+  - Updated `justfile` to use `uv` instead of `poetry`
+  - Improved development workflow with better tooling integration
+
 ### 0.4.7 - 2025-12-07
 
 - SECURITY: Update `urllib3` to 2.6 based on CVE-2025-66471 (high severity).
