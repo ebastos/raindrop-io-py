@@ -1028,9 +1028,9 @@ class Raindrop(BaseModel):
             # <collection> arg could be **either** an actual collection
             # or simply an int collection "id" already, handle either:
             if isinstance(collection, Collection | CollectionRef):
-                args["collection"] = collection.id
+                args["collection"] = {"$id": collection.id}
             else:
-                args["collection"] = collection
+                args["collection"] = {"$id": collection}
 
         url = URL.format(path=f"raindrop/{id}")
         item = api.put(url, json=args).json()["item"]

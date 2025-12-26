@@ -116,6 +116,11 @@ class API:
             return obj.value
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
+        # Handle Pydantic BaseModel objects (defense in depth)
+        from pydantic import BaseModel
+
+        if isinstance(obj, BaseModel):
+            return obj.dict()
         raise TypeError(
             f"Object of type {obj.__class__.__name__} is not JSON serializable",
         )

@@ -174,6 +174,12 @@ The project is licensed under the MIT License.
 
 ### Unreleased
 
+### 0.5.1 - 2025-12-26
+
+- **FIXED**: `Raindrop.update()` now correctly formats the `collection` parameter using the `{"$id": int}` format, consistent with `Raindrop.create_link()` and the Raindrop.io API specification. Previously, raw integer IDs were passed which could cause serialization issues in certain edge cases.
+
+- **IMPROVED**: Added Pydantic `BaseModel` handling to the JSON serializer (`_json_unknown`) as a defense-in-depth measure, preventing `TypeError` exceptions when Pydantic models inadvertently reach the serialization layer.
+
 ### 0.5.0 - 2025-12-26
 
 This release marks a significant milestone as the project transitions to a maintained fork with numerous enhancements:
