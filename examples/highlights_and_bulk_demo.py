@@ -1,65 +1,107 @@
-"""Example of using the new Highlights and Bulk Operations features."""
+"""Example demonstrating Highlights and Bulk Operations features."""
 
 import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from dotenv import load_dotenv
-from raindropiopy import API, Raindrop, Highlight, CollectionRef
+
+from raindropiopy import API, CollectionRef, Highlight, Raindrop
 
 load_dotenv()
 
 
-def demo():
-    """Demonstrate the Highlights and Bulk Operations API features."""
-    token = os.environ.get("RAINDROP_TOKEN")
-    if not token:
-        print("Please set RAINDROP_TOKEN in your .env file.")
-        return
+with API(os.environ["RAINDROP_TOKEN"]) as api:
+    # ============================================================
+    # 1. HIGHLIGHTS API DEMO
+    # ============================================================
+    print("=" * 60)
+    print("HIGHLIGHTS API DEMO")
+    print("=" * 60)
 
-    with API(token) as api:
-        # 1. Highlights Demo
-        print("--- Highlights Demo ---")
-        all_highlights = Highlight.get_all(api, perpage=5)
-        print(f"Found {len(all_highlights)} highlights across all raindrops.")
-        for h in all_highlights:
-            print(f"- {h.text} (Color: {h.color})")
+    # Get all highlights across raindrops
+    print("\nFetching all highlights (limited to 5)...", flush=True, end="")
+    all_highlights = Highlight.get_all(api, perpage=5)
+    print("Done.")
+    print(f"Found {len(all_highlights)} highlight(s) across all raindrops:")
+    for h in all_highlights:
+        print(f"  - '{h.text[:50]}...' (Color: {h.color})")
 
-        # Create a test link to manage highlights
-        link = "https://example.com/highlights-test"
-        print(f"\nCreating test raindrop: {link}")
-        raindrop = Raindrop.create_link(api, link=link, title="Highlights Test")
+    # Create a test raindrop to demonstrate highlights management
+    link = "https://example.com/highlights-test"
+    title = "Highlights Test Raindrop"
+    print(f"\nCreating test raindrop: '{title}'...", flush=True, end="")
+    raindrop = Raindrop.create_link(api, link=link, title=title)
+    print(f"Done, id={raindrop.id}")
 
-        print("Adding a highlight...")
-        raindrop = Raindrop.add_highlights(api, raindrop.id, [{"text": "This is a new highlight", "color": "yellow"}])
+    # Add a highlight to the raindrop
+    print("Adding a highlight to the raindrop...", flush=True, end="")
+    raindrop = Raindrop.add_highlights(
+        api,
+        raindrop.id,
+        [{"text": "This is a new highlight", "color": "yellow"}],
+    )
+    print("Done.")
 
-        if raindrop.highlights:
-            h_id = raindrop.highlights[0].id
-            print(f"Updating highlight {h_id}...")
-            Raindrop.update_highlight(api, raindrop.id, {"_id": h_id, "note": "Added a note to the highlight"})
+    # Update the highlight with a note
+    if raindrop.highlights and len(raindrop.highlights) > 0:
+        h_id = raindrop.highlights[0].id
+        print(f"Updating highlight {h_id} with a note...", flush=True, end="")
+        Raindrop.update_highlight(
+            api,
+            raindrop.id,
+            {"_id": h_id, "note": "Added a note to the highlight"},
+        )
+        print("Done.")
 
-            print("Removing highlight...")
-            Raindrop.remove_highlight(api, raindrop.id, h_id)
+        # Remove the highlight
+        print("Removing the highlight...", flush=True, end="")
+        Raindrop.remove_highlight(api, raindrop.id, h_id)
+        print("Done.")
 
-        # 2. Bulk Operations Demo
-        print("\n--- Bulk Operations Demo ---")
-        print("Creating multiple raindrops...")
-        new_items = [
-            {"link": "https://example.com/bulk-1", "title": "Bulk 1"},
-            {"link": "https://example.com/bulk-2", "title": "Bulk 2"},
-        ]
-        created = Raindrop.create_many(api, new_items)
-        print(f"Created {len(created)} raindrops.")
+    # Clean up the test raindrop
+    print("Removing test raindrop...", flush=True, end="")
+    Raindrop.delete(api, raindrop.id)
+    print("Done.")
 
-        bulk_ids = [item.id for item in created]
-        print(f"Updating tags for {len(bulk_ids)} raindrops...")
-        modified = Raindrop.update_many(api, CollectionRef.Unsorted.id, ids=bulk_ids, tags=["bulk-demo"])
-        print(f"Modified {modified} raindrops.")
+    # ============================================================
+    # 2. BULK OPERATIONS DEMO
+    # ============================================================
+    print("\n" + "=" * 60)
+    print("BULK OPERATIONS DEMO")
+    print("=" * 60)
 
-        print("Cleaning up (deleting bulk raindrops)...")
-        Raindrop.delete_many(api, CollectionRef.Unsorted.id, ids=bulk_ids)
+    # Create multiple raindrops at once
+    print("\nCreating multiple raindrops in bulk...", flush=True, end="")
+    new_items = [
+        {"link": "https://example.com/bulk-1", "title": "Bulk Demo Item 1"},
+        {"link": "https://example.com/bulk-2", "title": "Bulk Demo Item 2"},
+        {"link": "https://example.com/bulk-3", "title": "Bulk Demo Item 3"},
+    ]
+    created = Raindrop.create_many(api, new_items)
+    print("Done.")
+    print(f"Created {len(created)} raindrop(s):")
+    for item in created:
+        print(f"  - id={item.id}, title='{item.title}'")
 
-        # Clean up test raindrop
-        Raindrop.delete(api, raindrop.id)
-        print("\nDemo complete.")
+    # Update multiple raindrops at once
+    bulk_ids = [item.id for item in created]
+    print(f"\nUpdating tags for {len(bulk_ids)} raindrop(s)...", flush=True, end="")
+    modified = Raindrop.update_many(
+        api,
+        CollectionRef.Unsorted.id,
+        ids=bulk_ids,
+        tags=["bulk-demo", "example"],
+    )
+    print("Done.")
+    print(f"Modified {modified} raindrop(s).")
 
+    # Delete multiple raindrops at once
+    print(f"Deleting {len(bulk_ids)} raindrop(s) in bulk...", flush=True, end="")
+    Raindrop.delete_many(api, CollectionRef.Unsorted.id, ids=bulk_ids)
+    print("Done.")
 
-if __name__ == "__main__":
-    demo()
+    print("\n" + "=" * 60)
+    print("All demonstrations complete!")
+    print("=" * 60)
