@@ -23,12 +23,8 @@ def sample_raindrop_link():
     )
 
 
-@vcr.use_cassette()
-def test_lifecycle_raindrop_link(api, sample_raindrop_link) -> None:
-    """Test that we can roundtrip a regular/link-based raindrop, ie. create, update, get and delete."""
-    # TEST: Create
-    link, args = sample_raindrop_link
-    raindrop = Raindrop.create_link(api, link, **args)
+def _assert_raindrop_matches_args(raindrop: Raindrop, link: str, args: dict) -> None:
+    """Assert that a raindrop matches the expected link and arguments."""
     assert raindrop is not None
     assert isinstance(raindrop, Raindrop)
     assert raindrop.id
@@ -38,6 +34,15 @@ def test_lifecycle_raindrop_link(api, sample_raindrop_link) -> None:
     assert raindrop.title == args.get("title")
     assert raindrop.excerpt == args.get("excerpt")
     assert raindrop.type == RaindropType.link
+
+
+@vcr.use_cassette()
+def test_lifecycle_raindrop_link(api, sample_raindrop_link) -> None:
+    """Test that we can roundtrip a regular/link-based raindrop, ie. create, update, get and delete."""
+    # TEST: Create
+    link, args = sample_raindrop_link
+    raindrop = Raindrop.create_link(api, link, **args)
+    _assert_raindrop_matches_args(raindrop, link, args)
 
     # TEST: Edit...
     title = "a NEW/EDITED Title"

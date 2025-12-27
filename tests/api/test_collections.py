@@ -38,17 +38,18 @@ def test_system_collections(api) -> None:
     assert isinstance(system, list)
     assert len(system) == 3, "Sorry, we expect to always have *3* system collections!"
 
+    # Expected titles for each system collection ID
+    expected_titles = {
+        CollectionRef.All.id: "All",
+        CollectionRef.Trash.id: "Trash",
+        CollectionRef.Unsorted.id: "Unsorted",
+    }
+
     for collection in system:
         # models.py adds titles for us, make sure they come through...
         assert collection.title
-
         # ...and, that they're right!
-        if collection.id == CollectionRef.All.id:
-            assert collection.title == "All"
-        if collection.id == CollectionRef.Trash.id:
-            assert collection.title == "Trash"
-        if collection.id == CollectionRef.Unsorted.id:
-            assert collection.title == "Unsorted"
+        assert collection.title == expected_titles[collection.id]
 
 
 @vcr.use_cassette()

@@ -28,6 +28,47 @@ raindrop = {
 }
 
 
+def _assert_raindrop_basic(raindrop: Raindrop) -> None:
+    """Assert basic raindrop fields."""
+    assert raindrop.id == 2000
+    assert raindrop.cover == ""
+    assert raindrop.domain == "www.example.com"
+    assert raindrop.excerpt == "excerpt text"
+    assert raindrop.link == "https://www.example.com/"
+    assert raindrop.media == []
+    assert raindrop.tags == ["abc", "def"]
+    assert raindrop.title == "title"
+    assert raindrop.type == RaindropType.link
+
+
+def _assert_raindrop_datetimes(raindrop: Raindrop) -> None:
+    """Assert raindrop datetime fields."""
+    assert raindrop.created == datetime.datetime(
+        2020,
+        1,
+        1,
+        0,
+        0,
+        0,
+        tzinfo=datetime.timezone.utc,
+    )
+    assert raindrop.last_update == datetime.datetime(
+        2020,
+        1,
+        1,
+        1,
+        1,
+        1,
+        tzinfo=datetime.timezone.utc,
+    )
+
+
+def _assert_raindrop_references(raindrop: Raindrop) -> None:
+    """Assert raindrop reference fields."""
+    assert raindrop.collection.id == -1
+    assert raindrop.user.id == 3000
+
+
 def test_get() -> None:
     """Test get method."""
     api = API("dummy")
@@ -36,35 +77,9 @@ def test_get() -> None:
 
         c = Raindrop.get(api, 2000)
 
-        assert c.id == 2000
-        assert c.collection.id == -1
-        assert c.cover == ""
-        assert c.created == datetime.datetime(
-            2020,
-            1,
-            1,
-            0,
-            0,
-            0,
-            tzinfo=datetime.timezone.utc,
-        )
-        assert c.domain == "www.example.com"
-        assert c.excerpt == "excerpt text"
-        assert c.last_update == datetime.datetime(
-            2020,
-            1,
-            1,
-            1,
-            1,
-            1,
-            tzinfo=datetime.timezone.utc,
-        )
-        assert c.link == "https://www.example.com/"
-        assert c.media == []
-        assert c.tags == ["abc", "def"]
-        assert c.title == "title"
-        assert c.type == RaindropType.link
-        assert c.user.id == 3000
+        _assert_raindrop_basic(c)
+        _assert_raindrop_datetimes(c)
+        _assert_raindrop_references(c)
 
 
 def test_search() -> None:

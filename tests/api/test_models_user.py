@@ -43,6 +43,59 @@ test_user = {
 }
 
 
+def _assert_user_config(user: User) -> None:
+    """Assert user configuration fields."""
+    assert user.config.broken_level == BrokenLevel.default
+    assert user.config.font_color == FontColor.sunset
+    assert user.config.font_size == 20
+    assert user.config.lang == "en"
+    assert user.config.last_collection.id == 1
+    assert user.config.raindrops_sort == RaindropSort.last_update_dn
+    assert user.config.raindrops_view == View.list
+
+
+def _assert_user_files(user: User) -> None:
+    """Assert user files fields."""
+    assert user.files.size == 10000000000
+    assert user.files.used == 0
+    assert user.files.last_checkpoint == datetime.datetime(
+        2020,
+        1,
+        1,
+        2,
+        2,
+        2,
+        tzinfo=datetime.timezone.utc,
+    )
+
+
+def _assert_user_groups(user: User) -> None:
+    """Assert user groups fields."""
+    assert user.groups[0].hidden is False
+    assert user.groups[0].sort == 0
+    assert user.groups[0].title == "My Collections"
+    assert list(user.groups[0].collectionids) == [2000, 3000]
+
+
+def _assert_user_basic(user: User) -> None:
+    """Assert basic user fields."""
+    assert user.id == 1000
+    assert user.email == "mail@example.com"
+    assert user.email_md5 == "1111111111"
+    assert user.full_name == "test user"
+    assert user.password is True
+    assert user.pro is True
+    assert user.registered == datetime.datetime(
+        2020,
+        1,
+        2,
+        1,
+        1,
+        1,
+        tzinfo=datetime.timezone.utc,
+    )
+
+
 def test_get() -> None:
     """Test that we can get/lookup the user."""
     api = API("dummy")
@@ -50,42 +103,7 @@ def test_get() -> None:
         m.return_value.json.return_value = {"user": test_user}
         user = User.get(api)
 
-        assert user.id == 1000
-
-        assert user.config.broken_level == BrokenLevel.default
-        assert user.config.font_color == FontColor.sunset
-        assert user.config.font_size == 20
-        assert user.config.lang == "en"
-        assert user.config.last_collection.id == 1
-        assert user.config.raindrops_sort == RaindropSort.last_update_dn
-        assert user.config.raindrops_view == View.list
-
-        assert user.email == "mail@example.com"
-        assert user.email_md5 == "1111111111"
-        assert user.files.size == 10000000000
-        assert user.files.used == 0
-        assert user.files.last_checkpoint == datetime.datetime(
-            2020,
-            1,
-            1,
-            2,
-            2,
-            2,
-            tzinfo=datetime.timezone.utc,
-        )
-        assert user.full_name == "test user"
-        assert user.groups[0].hidden is False
-        assert user.groups[0].sort == 0
-        assert user.groups[0].title == "My Collections"
-        assert list(user.groups[0].collectionids) == [2000, 3000]
-        assert user.password is True
-        assert user.pro is True
-        assert user.registered == datetime.datetime(
-            2020,
-            1,
-            2,
-            1,
-            1,
-            1,
-            tzinfo=datetime.timezone.utc,
-        )
+        _assert_user_basic(user)
+        _assert_user_config(user)
+        _assert_user_files(user)
+        _assert_user_groups(user)

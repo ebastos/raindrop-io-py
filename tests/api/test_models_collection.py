@@ -51,6 +51,54 @@ system_collection = {
 }
 
 
+def _assert_collection_basic(collection: Collection) -> None:
+    """Assert basic collection fields."""
+    assert collection.id == 1000
+    assert collection.title == "aCollectionTitle"
+    assert collection.count == 0
+    assert collection.cover == ["https://www.aRandomCover.org"]
+    assert collection.sort == 3000
+    assert collection.public is False
+    assert collection.expanded is False
+    assert collection.color is None
+    assert collection.collaborators == []
+    assert collection.parent is None  # This IS the parent collection, thus, it has no parent itself!
+    assert collection.view == View.list
+
+
+def _assert_collection_access(collection: Collection) -> None:
+    """Assert collection access fields."""
+    assert collection.access.level == AccessLevel.owner
+    assert collection.access.draggable is True
+
+
+def _assert_collection_datetimes(collection: Collection) -> None:
+    """Assert collection datetime fields."""
+    assert collection.created == datetime.datetime(
+        2020,
+        1,
+        1,
+        0,
+        0,
+        0,
+        tzinfo=datetime.timezone.utc,
+    )
+    assert collection.last_update == datetime.datetime(
+        2020,
+        1,
+        2,
+        0,
+        0,
+        0,
+        tzinfo=datetime.timezone.utc,
+    )
+
+
+def _assert_collection_user(collection: Collection) -> None:
+    """Assert collection user reference."""
+    assert collection.user.id == 10000
+
+
 def test_get_root_collections(mock_api) -> None:
     """Test that we can get the "root" collections."""
     with patch("requests_oauthlib.OAuth2Session.get") as patched_request:
@@ -66,38 +114,10 @@ def test_get_root_collections(mock_api) -> None:
         assert len(collections) == 1
         collection = collections[0]
 
-        assert collection.id == 1000
-        assert collection.access.level == AccessLevel.owner
-        assert collection.access.draggable is True
-        assert collection.collaborators == []
-        assert collection.color is None
-        assert collection.count == 0
-        assert collection.cover == ["https://www.aRandomCover.org"]
-        assert collection.created == datetime.datetime(
-            2020,
-            1,
-            1,
-            0,
-            0,
-            0,
-            tzinfo=datetime.timezone.utc,
-        )
-        assert collection.expanded is False
-        assert collection.last_update == datetime.datetime(
-            2020,
-            1,
-            2,
-            0,
-            0,
-            0,
-            tzinfo=datetime.timezone.utc,
-        )
-        assert collection.parent is None  # This IS the parent collection, thus, it has no parent itself!
-        assert collection.public is False
-        assert collection.sort == 3000
-        assert collection.title == "aCollectionTitle"
-        assert collection.user.id == 10000
-        assert collection.view == View.list
+        _assert_collection_basic(collection)
+        _assert_collection_access(collection)
+        _assert_collection_datetimes(collection)
+        _assert_collection_user(collection)
 
 
 def test_get_child_collections(mock_api) -> None:
