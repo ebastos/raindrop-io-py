@@ -17,6 +17,7 @@ from typing import Any, ClassVar
 import requests
 from pydantic import (
     BaseModel,
+    ConfigDict,
     EmailStr,
     Field,
     HttpUrl,
@@ -25,6 +26,7 @@ from pydantic import (
     root_validator,
     validator,
 )
+from pydantic.alias_generators import to_camel
 
 from .api import API  # ie. for typing only...
 
@@ -234,6 +236,8 @@ class Collection(BaseModel):
         Attributes in `other` are *NOT* OFFICIALLY SUPPORTED...use at your own risk!
     """
 
+    model_config = ConfigDict(alias_generator=to_camel)
+
     id: int | None = Field(None, alias="_id")
     title: str
     user: UserRef
@@ -246,7 +250,7 @@ class Collection(BaseModel):
     created: datetime | None
     expanded: bool = False
     last_update: datetime | None
-    parent: int | None  # Id of parent collection (if any)
+    parent: int | None = None  # Id of parent collection (if any)
     public: bool | None
     sort: int | None
     view: View | None
@@ -760,7 +764,7 @@ class Raindrop(BaseModel):
     domain: str | None
     excerpt: str | None  # aka 'Description' on the Raindrop UI.
     note: str | None
-    file: File | None
+    file: File | None = None
     last_update: datetime | None = Field(None, alias="lastUpdate")
     link: HttpUrl | None
     media: list[dict[str, Any]] | None
@@ -771,9 +775,9 @@ class Raindrop(BaseModel):
     creator_ref: CreatorRef | None = Field(None, alias="creatorRef")
 
     # "Other" fields:
-    broken: bool | None
-    cache: Cache | None
-    important: bool | None  # aka marked as Favorite.
+    broken: bool | None = None
+    cache: Cache | None = None
+    important: bool | None = None  # aka marked as Favorite.
     highlights: list[Highlight] = Field(default_factory=list)
 
     # Per API Doc: "Our API response could contain other fields, not described above.
